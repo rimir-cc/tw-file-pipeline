@@ -1,0 +1,35 @@
+title: $:/plugins/rimir/file-pipeline/pipelines/pdf
+tags: $:/tags/rimir/file-pipeline/pipeline
+type: application/json
+
+{
+  "name": "pdf",
+  "match": ["application/pdf"],
+  "steps": [
+    {
+      "id": "thumb",
+      "action": "thumb-pdf",
+      "input": "source",
+      "output": "_generated/{{name}}_thumb.png",
+      "params": {"resolution": "{{config:$:/config/rimir/file-pipeline/thumb-resolution}}"},
+      "condition": {"config": "$:/config/rimir/file-pipeline/thumb-pdfs", "equals": "yes"},
+      "artifact": {"setField": "_thumbnail_uri"}
+    },
+    {
+      "id": "text",
+      "action": "extract-pdf-text",
+      "input": "source",
+      "captureStdout": true,
+      "artifact": {"type": "extraction", "suffix": ".extracted", "tiddlerType": "text/x-markdown"}
+    },
+    {
+      "id": "images",
+      "action": "extract-pdf-images",
+      "input": "source",
+      "output": "_derived/{{basename}}/img",
+      "scanDir": true,
+      "condition": {"config": "$:/config/rimir/file-pipeline/extract-images", "equals": "yes"},
+      "artifact": {"type": "extraction-image", "prefix": ".extracted/", "tiddlerType": "image/png"}
+    }
+  ]
+}

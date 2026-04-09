@@ -1,0 +1,59 @@
+title: $:/plugins/rimir/file-pipeline/settings
+type: text/vnd.tiddlywiki
+
+\procedure fp-pipeline-row()
+<$let pipelineDef={{{ [all[current]get[text]jsonget[name]] }}}>
+<tr>
+<td><<pipelineDef>></td>
+<td><$text text={{{ [all[current]get[text]jsonget[match]join[, ]] }}}/></td>
+<td><$text text={{{ [all[current]get[text]jsonget[steps]length[]] }}}/> steps</td>
+<td>
+<$button class="tc-btn-invisible tc-tiddlylink" tooltip="View pipeline definition">
+<$action-navigate $to=<<currentTiddler>>/>
+{{$:/core/images/info-button}}
+</$button>
+</td>
+</tr>
+</$let>
+\end
+
+<div class="rr-settings-section">
+
+!! Pipelines
+
+<div class="rr-settings-info-card">
+Pipelines define processing steps that run automatically on uploaded files. Each pipeline matches specific file types and runs a sequence of command and/or LLM steps.
+</div>
+
+<$checkbox tiddler="$:/config/rimir/file-pipeline/enabled" field="text" checked="yes" unchecked="no"> Enable pipelines</$checkbox>
+
+<table class="rr-settings-table">
+<tr><th>Name</th><th>File types</th><th>Steps</th><th></th></tr>
+<$list filter="[all[tiddlers+shadows]tag[$:/tags/rimir/file-pipeline/pipeline]]">
+<<fp-pipeline-row>>
+</$list>
+</table>
+
+!! Thumbnails
+
+<$checkbox tiddler="$:/config/rimir/file-pipeline/thumb-images" field="text" checked="yes" unchecked="no"> Generate thumbnails for images</$checkbox>
+
+<$checkbox tiddler="$:/config/rimir/file-pipeline/thumb-pdfs" field="text" checked="yes" unchecked="no"> Generate thumbnails for PDFs</$checkbox>
+
+Resolution: <$edit-text tiddler="$:/config/rimir/file-pipeline/thumb-resolution" tag="input" default="200" class="rr-input-sm"/> px
+
+!! Text Extraction
+
+<$checkbox tiddler="$:/config/rimir/file-pipeline/extract-images" field="text" checked="yes" unchecked="no"> Extract embedded images from PDFs (requires `pdfimages`)</$checkbox>
+
+Max extraction size: <$edit-text tiddler="$:/config/rimir/file-pipeline/max-extraction-size" tag="input" default="500000" class="rr-input-sm"/> characters
+
+!! Prompt Templates
+
+<$list filter="[all[tiddlers+shadows]tag[$:/tags/rimir/file-pipeline/prompt]]" emptyMessage="//No prompt templates found.//">
+<div class="rr-settings-item">
+<$link/> &mdash; <$text text={{{ [all[current]get[description]] }}}/>
+</div>
+</$list>
+
+</div>

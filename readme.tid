@@ -1,0 +1,31 @@
+title: $:/plugins/rimir/file-pipeline/readme
+type: text/vnd.tiddlywiki
+
+! File Pipeline
+
+Configurable binary data processing pipelines for TiddlyWiki. Define multi-step workflows that transform uploaded files into thumbnails, extracted text, format conversions, and LLM-generated analysis — all linked to the source file with automatic lifecycle management.
+
+!! Key Features
+
+* ''Configurable pipelines'' — define processing steps per file type as tiddlers (no restart needed)
+* ''Command steps'' — run shell commands (ImageMagick, pdftotext, pandoc, pdfimages, custom scripts)
+* ''LLM steps'' — send extracted text to an LLM for summarization, annotation, or analysis
+* ''Step chaining'' — output of one step feeds into the next (e.g., DOCX → PDF → thumbnail)
+* ''Artifact lifecycle'' — all generated tiddlers are linked via `_artifact_source` for automatic cascade delete/rename
+* ''Auto-matching'' — pipelines auto-select based on MIME type, or can be explicitly chosen
+* ''Interactive mode'' — LLM steps can pause for human review before creating artifacts
+
+!! Default Pipelines
+
+|!Pipeline |!File Types |!Steps |
+|pdf |PDF |Thumbnail + text extraction + image extraction |
+|docx |DOCX |Convert to PDF + thumbnail + text extraction |
+|image |JPEG, PNG, GIF, WebP |Thumbnail |
+|xlsx |XLSX |Text extraction |
+
+!! Prerequisites
+
+* ''runner'' plugin — provides `runner-actions.json` command execution
+* ''file-upload'' plugin — provides URI resolution and artifact cascade
+* ''llm-connect'' plugin — required only for LLM pipeline steps
+* External tools: `magick.exe` (thumbnails), `pdftotext` (PDF text), `pandoc` (DOCX), `pdfimages` (PDF images)

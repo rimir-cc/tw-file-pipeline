@@ -1,0 +1,16 @@
+title: $:/plugins/rimir/file-pipeline/documentation
+type: text/vnd.tiddlywiki
+
+<$list filter="[[$:/plugins/rimir/doc-template]plugin-type[plugin]]" variable="ignore">
+<$transclude tiddler="$:/plugins/rimir/file-pipeline/doc/overview"/>
+</$list>
+
+<$list filter="[[$:/plugins/rimir/doc-template]plugin-type[plugin]else[not-installed]]" variable="check">
+<$list filter="[<check>match[not-installed]]">
+
+<div class="rr-settings-info-card">
+The ''doc-template'' plugin is not installed. See the ''readme'' tab for documentation.
+</div>
+
+</$list>
+</$list>

@@ -1,0 +1,41 @@
+title: $:/plugins/rimir/file-pipeline/pipelines/docx-llm
+tags: $:/tags/rimir/file-pipeline/pipeline
+type: application/json
+
+{
+  "name": "docx-llm",
+  "match": ["application/msword"],
+  "steps": [
+    {
+      "id": "to-docx",
+      "action": "convert-doc-to-docx",
+      "input": "source",
+      "output": "_derived/{{basename}}/",
+      "outputFile": "_derived/{{basename}}/{{name}}.docx",
+      "artifact": {"type": "conversion", "suffix": ".docx", "tiddlerType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+    },
+    {
+      "id": "to-pdf",
+      "action": "convert-docx-to-pdf",
+      "input": "step:to-docx",
+      "output": "_derived/{{basename}}/",
+      "outputFile": "_derived/{{basename}}/{{name}}.pdf",
+      "artifact": {"type": "conversion", "suffix": ".pdf", "tiddlerType": "application/pdf"}
+    },
+    {
+      "id": "text",
+      "action": "extract-docx-text",
+      "input": "step:to-docx",
+      "captureStdout": true,
+      "artifact": {"type": "extraction", "suffix": ".extracted", "tiddlerType": "text/x-markdown"}
+    },
+    {
+      "id": "summary",
+      "type": "llm",
+      "input": "step:text",
+      "mode": "auto",
+      "promptTemplate": "$:/plugins/rimir/file-pipeline/prompts/tender-highlights",
+      "artifact": {"type": "summary", "suffix": ".highlights", "tiddlerType": "text/x-markdown"}
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+title: $:/plugins/rimir/file-pipeline/doc/overview
+tags:
+type: text/vnd.tiddlywiki
+rdt.plugin-name: file pipeline
+rdt.section: Overview
+rdt.order: 1
+
+! Overview
+
+File Pipeline provides configurable binary data processing pipelines for TiddlyWiki. It supports two types of processing steps:
+
+* ''Command steps'' — run shell commands like ImageMagick, pdftotext, pandoc, or LibreOffice
+* ''LLM steps'' — send extracted text to an LLM for analysis (auto-background or interactive with human-in-the-loop)
+
+!! Architecture
+
+The plugin has three layers:
+
+* ''`pipeline-executor.js`'' (server) — loads pipeline definitions, runs command steps via `runner-actions.json`
+* ''`pipeline-route.js`'' (server) — `POST /api/file-pipeline` endpoint, callable from any plugin
+* ''`pipeline-client.js`'' (browser) — orchestrates the full flow: server call → artifact creation → LLM steps
+
+!! Integration
+
+When installed alongside ''file-upload'', all `<$file-dropzone>` widgets automatically trigger matching pipelines on upload. The file-upload thumbnail settings are replaced by file-pipeline's settings.
+
+When installed alongside ''llm-connect'', document extraction uses pipelines instead of the legacy `/api/extract` route. Cached `.extracted` tiddlers are shared between both systems.
+
+!! Pipeline Schema
+
+Pipelines are defined as JSON tiddlers tagged `$:/tags/rimir/file-pipeline/pipeline`:
+
+```json
+{
+  "name": "pipeline-name",
+  "match": ["mime/type"],
+  "steps": [
+    {
+      "id": "step-id",
+      "action": "runner-action-name",
+      "input": "source",
+      "output": "_generated/{{name}}_thumb.png",
+      "captureStdout": false,
+      "scanDir": false,
+      "condition": {"config": "$:/config/...", "equals": "yes"},
+      "params": {"resolution": "{{config:$:/config/...}}"},
+      "artifact": {"setField": "_thumbnail_uri"}
+    }
+  ]
+}
+```
+
+!! Step Chaining
+
+Steps reference each other via `"input": "step:<id>"`. The output of a command step (file path or captured stdout) becomes the input of the next step. This enables multi-stage workflows like DOC → DOCX → PDF → thumbnail.
+
+!! Artifact Lifecycle
+
+All generated tiddlers carry `_artifact_source` (pointing to the original file) and `_artifact_type` fields. The file-upload plugin's cascade system automatically handles delete and rename propagation.

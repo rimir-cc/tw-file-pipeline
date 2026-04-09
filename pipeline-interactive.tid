@@ -1,0 +1,53 @@
+title: $:/plugins/rimir/file-pipeline/pipeline-interactive
+tags: $:/tags/PageTemplate
+type: text/vnd.tiddlywiki
+
+\whitespace trim
+\procedure fp-use-artifact()
+<$let
+  chatTiddler={{{ [{$:/state/rimir/file-pipeline/interactive}get[text]] }}}
+  sourceTitle={{{ [<chatTiddler>get[fp-source-title]] }}}
+  artifactJson={{{ [<chatTiddler>get[fp-artifact]] }}}
+  messages={{{ [<chatTiddler>get[llm-messages]] }}}
+>
+<$action-sendmessage $message="tm-fp-use-artifact"
+  sourceTitle=<<sourceTitle>>
+  artifactJson=<<artifactJson>>
+  messages=<<messages>>
+/>
+<$action-deletetiddler $tiddler="$:/state/rimir/file-pipeline/interactive"/>
+</$let>
+\end
+
+\procedure fp-cancel-interactive()
+<$let chatTiddler={{{ [{$:/state/rimir/file-pipeline/interactive}get[text]] }}}>
+<$action-deletetiddler $tiddler=<<chatTiddler>>/>
+<$action-deletetiddler $tiddler="$:/state/rimir/file-pipeline/interactive"/>
+</$let>
+\end
+
+<$reveal state="$:/state/rimir/file-pipeline/interactive" type="nomatch" text="" default="">
+<$let chatTiddler={{{ [{$:/state/rimir/file-pipeline/interactive}get[text]] }}}>
+<div class="fp-interactive-panel">
+
+<div class="fp-interactive-header">
+<span>Pipeline: LLM Step</span>
+<$button class="tc-btn-invisible" actions=<<fp-cancel-interactive>>>&times;</$button>
+</div>
+
+<div class="fp-interactive-body">
+<$llm-chat
+  chatTiddler=<<chatTiddler>>
+  tools="[all[shadows+tiddlers]tag[$:/tags/rimir/llm-connect/tool]]"
+  placeholder="Review and refine the LLM output, or send as-is..."
+/>
+</div>
+
+<div class="fp-interactive-footer">
+<$button class="fp-cancel-btn" actions=<<fp-cancel-interactive>>>Cancel</$button>
+<$button class="fp-artifact-btn" actions=<<fp-use-artifact>>>Use as Artifact</$button>
+</div>
+
+</div>
+</$let>
+</$reveal>

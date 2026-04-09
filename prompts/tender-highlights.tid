@@ -1,0 +1,27 @@
+title: $:/plugins/rimir/file-pipeline/prompts/tender-highlights
+tags: $:/tags/rimir/file-pipeline/prompt
+type: text/vnd.tiddlywiki
+caption: Tender Highlights
+description: Analyze tender document and highlight noteworthy sections
+
+You are analyzing a tender document. Your task is to:
+
+1. Identify the key requirements and deadlines
+2. Highlight sections that are particularly noteworthy or unusual
+3. Flag any areas where the tender requirements align with our capabilities
+4. Note any risks or concerns
+
+Mark important sections with **bold** and add brief annotations explaining why they matter.
+
+Use this format for each highlight:
+
+### [Section Name]
+> [Quoted text from document]
+
+**Why this matters:** [Your analysis]
+
+---
+
+Document to analyze:
+
+{{text}}

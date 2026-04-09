@@ -1,0 +1,33 @@
+title: $:/plugins/rimir/file-pipeline/pipelines/docx
+tags: $:/tags/rimir/file-pipeline/pipeline
+type: application/json
+
+{
+  "name": "docx",
+  "match": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  "steps": [
+    {
+      "id": "to-pdf",
+      "action": "convert-docx-to-pdf",
+      "input": "source",
+      "output": "_derived/{{basename}}/",
+      "outputFile": "_derived/{{basename}}/{{name}}.pdf",
+      "artifact": {"type": "conversion", "suffix": ".pdf", "tiddlerType": "application/pdf"}
+    },
+    {
+      "id": "thumb",
+      "action": "thumb-pdf",
+      "input": "step:to-pdf",
+      "output": "_generated/{{name}}_thumb.png",
+      "params": {"resolution": "{{config:$:/config/rimir/file-pipeline/thumb-resolution}}"},
+      "artifact": {"setField": "_thumbnail_uri"}
+    },
+    {
+      "id": "text",
+      "action": "extract-docx-text",
+      "input": "source",
+      "captureStdout": true,
+      "artifact": {"type": "extraction", "suffix": ".extracted", "tiddlerType": "text/x-markdown"}
+    }
+  ]
+}

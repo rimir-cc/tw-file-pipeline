@@ -1,0 +1,19 @@
+title: $:/plugins/rimir/file-pipeline/pipelines/image
+tags: $:/tags/rimir/file-pipeline/pipeline
+type: application/json
+
+{
+  "name": "image",
+  "match": ["image/jpeg", "image/png", "image/gif", "image/webp"],
+  "steps": [
+    {
+      "id": "thumb",
+      "action": "thumb-image",
+      "input": "source",
+      "output": "_generated/{{name}}_thumb{{ext}}",
+      "params": {"resolution": "{{config:$:/config/rimir/file-pipeline/thumb-resolution}}"},
+      "condition": {"config": "$:/config/rimir/file-pipeline/thumb-images", "equals": "yes"},
+      "artifact": {"setField": "_thumbnail_uri"}
+    }
+  ]
+}

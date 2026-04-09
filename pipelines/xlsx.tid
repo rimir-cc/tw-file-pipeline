@@ -1,0 +1,17 @@
+title: $:/plugins/rimir/file-pipeline/pipelines/xlsx
+tags: $:/tags/rimir/file-pipeline/pipeline
+type: application/json
+
+{
+  "name": "xlsx",
+  "match": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+  "steps": [
+    {
+      "id": "text",
+      "action": "extract-xlsx-text",
+      "input": "source",
+      "captureStdout": true,
+      "artifact": {"type": "extraction", "suffix": ".extracted", "tiddlerType": "text/x-markdown"}
+    }
+  ]
+}

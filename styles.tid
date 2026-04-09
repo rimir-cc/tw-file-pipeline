@@ -1,0 +1,73 @@
+title: $:/plugins/rimir/file-pipeline/styles
+tags: $:/tags/Stylesheet
+type: text/vnd.tiddlywiki
+
+.fp-status {
+  padding: 4px 8px;
+  font-size: 0.85em;
+  color: <<colour muted-foreground>>;
+  background: <<colour page-background>>;
+  border-radius: 4px;
+}
+
+.fp-status-running {
+  color: <<colour dirty-indicator>>;
+}
+
+.fp-interactive-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 500px;
+  max-height: 70vh;
+  background: <<colour tiddler-background>>;
+  border: 1px solid <<colour tiddler-border>>;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fp-interactive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: <<colour page-background>>;
+  border-bottom: 1px solid <<colour tiddler-border>>;
+  font-weight: bold;
+}
+
+.fp-interactive-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.fp-interactive-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid <<colour tiddler-border>>;
+}
+
+.fp-artifact-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  background: <<colour primary>>;
+  color: <<colour background>>;
+  border: none;
+}
+
+.fp-cancel-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  background: <<colour page-background>>;
+  border: 1px solid <<colour tiddler-border>>;
+}
