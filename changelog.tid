@@ -4,4 +4,5 @@ type: text/vnd.tiddlywiki
 ! Changelog
 
 |!Version |!Date |!Changes |
+|0.1.1 |2026-04-09 |Dropzone-level LLM config: 3-tier priority (step > dropzone > global) for provider, model, system-prompt |
 |0.1.0 |2026-04-08 |Initial release: pipeline executor, route, client library. Command steps (thumbnails, text extraction, format conversion, image extraction). LLM steps (auto + interactive modes). Default pipelines for PDF, DOCX, XLSX, images. Prompt template system. Settings UI |
