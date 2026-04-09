@@ -68,6 +68,22 @@ Create a tiddler tagged `$:/tags/rimir/file-pipeline/pipeline` with `type: appli
 }
 ```
 
+## LLM Step Configuration
+
+LLM steps can be configured at three levels (highest priority first):
+
+1. **Step level** — `systemPrompt`, `provider`, `model` fields in step JSON (supports `{{config:...}}` indirection)
+2. **Dropzone level** — `prop-system-prompt`, `prop-provider`, `prop-model` attributes on `<$file-dropzone>`
+3. **Global default** — llm-connect's provider/model/system-prompt settings
+
+```html
+<$file-dropzone pipeline="docx-llm"
+  prop-system-prompt="$:/my/custom-system-prompt"
+  prop-model="gpt-4o">
+  Drop files here
+</$file-dropzone>
+```
+
 ## License
 
 MIT

@@ -54,6 +54,25 @@ Pipelines are defined as JSON tiddlers tagged `$:/tags/rimir/file-pipeline/pipel
 
 Steps reference each other via `"input": "step:<id>"`. The output of a command step (file path or captured stdout) becomes the input of the next step. This enables multi-stage workflows like DOC → DOCX → PDF → thumbnail.
 
+!! LLM Steps
+
+LLM steps send text from a previous step to an LLM API and store the response as an artifact. Two modes:
+
+* ''Auto'' (`"mode": "auto"`) — runs in the background via `orchestrator.runAction()`, no user interaction
+* ''Interactive'' (`"mode": "interactive"`) — opens a chat panel, user can change model, edit prompt, iterate, then save
+
+LLM step fields: `promptTemplate` (tiddler title with `{{text}}`/`{{title}}`/`{{filename}}` substitution), `systemPrompt`, `provider`, `model`, `maxTokens`.
+
+!! LLM Configuration Priority
+
+LLM settings are resolved in this order (highest priority first):
+
+# ''Step level'' — `systemPrompt`, `provider`, `model` fields in the pipeline step JSON (supports `{{config:...}}` indirection)
+# ''Dropzone level'' — `prop-system-prompt`, `prop-provider`, `prop-model` attributes on `<$file-dropzone>`
+# ''Global default'' — llm-connect's provider/model/system-prompt settings
+
+This allows a single pipeline definition to be reused across different dropzones with different LLM configurations.
+
 !! Artifact Lifecycle
 
 All generated tiddlers carry `_artifact_source` (pointing to the original file) and `_artifact_type` fields. The file-upload plugin's cascade system automatically handles delete and rename propagation.

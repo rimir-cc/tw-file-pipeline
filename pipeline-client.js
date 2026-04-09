@@ -102,7 +102,7 @@ function processResults(sourceTitle, options, results, onComplete, onError, onPr
 
 		if(result.type === "llm") {
 			// LLM step — execute client-side
-			executeLlmStep(result.step, result.inputText, sourceTitle, options.filename, function(err, text) {
+			executeLlmStep(result.step, result.inputText, sourceTitle, options.filename, options.llmOptions, function(err, text) {
 				if(err) {
 					allResults.push({stepId: result.stepId, error: err.message});
 					processStep(index + 1);
@@ -204,7 +204,8 @@ function setFieldOnSource(sourceTitle, fieldName, value) {
 
 // --- LLM step execution ---
 
-function executeLlmStep(step, inputText, sourceTitle, filename, callback, onPause) {
+function executeLlmStep(step, inputText, sourceTitle, filename, llmOptions, callback, onPause) {
+	var opts = llmOptions || {};
 	var mode = step.mode || "auto";
 
 	if(mode === "interactive") {
@@ -226,9 +227,11 @@ function executeLlmStep(step, inputText, sourceTitle, filename, callback, onPaus
 		return;
 	}
 
-	var provider = resolveConfigRef(step.provider);
-	var model = resolveConfigRef(step.model);
-	var config = helpers.resolveProviderConfig(provider, model);
+	// Priority: step field > dropzone prop-* > global default
+	var provider = resolveConfigRef(step.provider) || opts.provider;
+	var model = resolveConfigRef(step.model) || opts.model;
+	var systemPrompt = resolveConfigRef(step.systemPrompt) || opts.systemPrompt;
+	var config = helpers.resolveProviderConfig(provider, model, systemPrompt);
 	var adapter = orchestrator.getAdapter(config.provider);
 	var prompt = renderPromptTemplate(step.promptTemplate, {
 		text: inputText,
