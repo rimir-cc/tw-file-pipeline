@@ -74,13 +74,23 @@ exports.getPipeline = function(name) {
 
 function loadActions() {
 	if(_cachedActions) return _cachedActions;
+	// Start with built-in defaults from config tiddler
+	var defaults = {};
+	var defaultsTiddler = $tw.wiki.getTiddler("$:/config/rimir/file-pipeline/default-actions");
+	if(defaultsTiddler && defaultsTiddler.fields.text) {
+		try { defaults = JSON.parse(defaultsTiddler.fields.text); } catch(e) {}
+	}
+	// Merge with runner-actions.json (user overrides take precedence)
+	var userActions = {};
 	var actionsPath = path.resolve($tw.boot.wikiPath, "runner-actions.json");
 	try {
-		_cachedActions = JSON.parse(fs.readFileSync(actionsPath, "utf8"));
+		userActions = JSON.parse(fs.readFileSync(actionsPath, "utf8"));
 	} catch(e) {
-		logger.log("Cannot read runner-actions.json: " + e.message);
-		_cachedActions = {};
+		// No runner-actions.json — use defaults only
 	}
+	_cachedActions = {};
+	for(var key in defaults) { _cachedActions[key] = defaults[key]; }
+	for(var key2 in userActions) { _cachedActions[key2] = userActions[key2]; }
 	return _cachedActions;
 }
 

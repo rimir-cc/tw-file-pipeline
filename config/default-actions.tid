@@ -1,0 +1,55 @@
+title: $:/config/rimir/file-pipeline/default-actions
+type: application/json
+
+{
+    "thumb-image": {
+        "command": "magick {{input}} -thumbnail \"{{resolution}}>\" {{output}}",
+        "params": ["input", "output", "resolution"],
+        "description": "Generate image thumbnail"
+    },
+    "thumb-pdf": {
+        "command": "magick {{input}}[0] -thumbnail \"{{resolution}}>\" {{output}}",
+        "params": ["input", "output", "resolution"],
+        "description": "Generate PDF first-page thumbnail as PNG"
+    },
+    "extract-pdf-text": {
+        "command": "pdftotext -layout {{input}} -",
+        "params": ["input"],
+        "description": "Extract text from PDF via pdftotext"
+    },
+    "extract-pdf-images": {
+        "command": "pdfimages -png {{input}} {{output}}",
+        "params": ["input", "output"],
+        "description": "Extract embedded images from PDF via pdfimages"
+    },
+    "convert-docx-to-pdf": {
+        "command": "libreoffice --headless --convert-to pdf --outdir {{output}} {{input}}",
+        "params": ["input", "output"],
+        "description": "Convert DOCX to PDF via LibreOffice"
+    },
+    "extract-docx-text": {
+        "command": "pandoc {{input}} -t markdown --wrap=none",
+        "params": ["input"],
+        "description": "Extract markdown from DOCX via pandoc"
+    },
+    "extract-xlsx-text": {
+        "command": "python3 -c \"import openpyxl,sys;wb=openpyxl.load_workbook(sys.argv[1]);[print(f'## {ws.title}') or [print('|'.join(str(c.value or '') for c in r)) for r in ws.iter_rows()] for ws in wb]\" {{input}}",
+        "params": ["input"],
+        "description": "Extract text from XLSX via Python openpyxl"
+    },
+    "convert-doc-to-docx": {
+        "command": "libreoffice --headless --convert-to docx --outdir {{output}} {{input}}",
+        "params": ["input", "output"],
+        "description": "Convert DOC to DOCX via LibreOffice"
+    },
+    "downscale-video": {
+        "command": "bash -c 'for dim in {{dimensions}}; do ffmpeg -y -loglevel error -i {{input}} -vf \"scale=${dim}:${dim}:force_original_aspect_ratio=decrease:force_divisible_by=2\" -c:v libx264 -crf 23 -c:a aac {{output}}_${dim}.mp4; done'",
+        "params": ["input", "output", "dimensions"],
+        "description": "Downscale video to fit within max dimensions (no upscale)"
+    },
+    "extract-video-frames": {
+        "command": "ffmpeg -y -loglevel error -i {{input}} -t 60 -vf \"fps=1/{{interval}}\" {{output}}_%03d.png",
+        "params": ["input", "output", "interval"],
+        "description": "Extract frames from first 60s of video"
+    }
+}
