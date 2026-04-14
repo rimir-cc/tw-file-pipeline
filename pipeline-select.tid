@@ -1,0 +1,69 @@
+title: $:/plugins/rimir/file-pipeline/pipeline-select
+tags: $:/tags/PageTemplate
+type: text/vnd.tiddlywiki
+
+\whitespace trim
+\procedure fp-confirm-select()
+<$let
+  selectTiddler={{{ [{$:/state/rimir/file-pipeline/select}] }}}
+  sourceTitle={{{ [<selectTiddler>get[text]jsonget[sourceTitle]] }}}
+>
+<$action-sendmessage $message="tm-fp-confirm-select" sourceTitle=<<sourceTitle>>/>
+</$let>
+\end
+
+\procedure fp-cancel-select()
+<$let
+  selectTiddler={{{ [{$:/state/rimir/file-pipeline/select}] }}}
+  sourceTitle={{{ [<selectTiddler>get[text]jsonget[sourceTitle]] }}}
+>
+<$action-sendmessage $message="tm-fp-cancel-select" sourceTitle=<<sourceTitle>>/>
+</$let>
+<$action-deletetiddler $tiddler="$:/state/rimir/file-pipeline/select"/>
+<$action-deletetiddler $tiddler="$:/temp/rimir/file-pipeline/select-choice"/>
+\end
+
+<$reveal state="$:/state/rimir/file-pipeline/select" type="nomatch" text="" default="">
+<$let
+  selectTiddler={{{ [{$:/state/rimir/file-pipeline/select}] }}}
+  prompt={{{ [<selectTiddler>get[text]jsonget[prompt]] }}}
+  candidateCount={{{ [<selectTiddler>get[text]jsonindexes[candidates]count[]] }}}
+>
+
+<div class="fp-select-panel">
+
+<div class="fp-select-header">
+<span><<prompt>> (<<candidateCount>> frames)</span>
+<$button class="tc-btn-invisible" actions=<<fp-cancel-select>>>&times;</$button>
+</div>
+
+<$set name="currentChoice" tiddler="$:/temp/rimir/file-pipeline/select-choice" field="text">
+<div class="fp-select-body">
+<div class="fp-select-grid">
+<$list filter="[<selectTiddler>get[text]jsonindexes[candidates]]" variable="idx">
+<$let
+  uri={{{ [<selectTiddler>get[text]jsonextract[candidates]jsonextract<idx>jsonget[uri]] }}}
+  filename={{{ [<selectTiddler>get[text]jsonextract[candidates]jsonextract<idx>jsonget[filename]] }}}
+  itemClass={{{ [<currentChoice>match<uri>then[fp-select-item selected]] ~[[fp-select-item]] }}}
+>
+<$button set="$:/temp/rimir/file-pipeline/select-choice" setTo=<<uri>> class=<<itemClass>>>
+<img src=<<uri>> loading="lazy" class="fp-select-thumb"/>
+<div class="fp-select-label"><$text text=<<filename>>/></div>
+</$button>
+</$let>
+</$list>
+</div>
+</div>
+
+<div class="fp-select-footer">
+<$button class="fp-cancel-btn" actions=<<fp-cancel-select>>>Cancel</$button>
+<$button class="fp-confirm-btn" actions=<<fp-confirm-select>>>
+<$list filter="[<currentChoice>!is[blank]]" emptyMessage="Skip">Confirm</$list>
+</$button>
+</div>
+</$set>
+
+</div>
+
+</$let>
+</$reveal>

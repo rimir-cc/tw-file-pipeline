@@ -24,7 +24,7 @@ type: text/vnd.tiddlywiki
   border: 1px solid <<colour tiddler-border>>;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 1000;
+  z-index: 9300;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -70,4 +70,109 @@ type: text/vnd.tiddlywiki
   cursor: pointer;
   background: <<colour page-background>>;
   border: 1px solid <<colour tiddler-border>>;
+}
+
+/* --- Select panel --- */
+
+.fp-select-panel {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 620px;
+  max-height: 80vh;
+  background: <<colour tiddler-background>>;
+  border: 1px solid <<colour tiddler-border>>;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 9300;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fp-select-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: <<colour page-background>>;
+  border-bottom: 1px solid <<colour tiddler-border>>;
+  font-weight: bold;
+}
+
+.fp-select-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.fp-select-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.fp-select-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  background: <<colour page-background>>;
+  transition: border-color 0.15s;
+}
+
+.fp-select-item:hover {
+  border-color: <<colour muted-foreground>>;
+}
+
+.fp-select-item.selected {
+  border-color: <<colour primary>>;
+  background: <<colour notification-background>>;
+}
+
+.fp-select-thumb {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.fp-select-label {
+  margin-top: 4px;
+  font-size: 0.75em;
+  color: <<colour muted-foreground>>;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.fp-select-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid <<colour tiddler-border>>;
+}
+
+.fp-select-count {
+  margin-right: auto;
+  font-size: 0.85em;
+  color: <<colour muted-foreground>>;
+}
+
+.fp-confirm-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  background: <<colour primary>>;
+  color: <<colour background>>;
+  border: none;
 }

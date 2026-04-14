@@ -1,0 +1,37 @@
+title: $:/plugins/rimir/file-pipeline/pipelines/video
+tags: $:/tags/rimir/file-pipeline/pipeline
+type: application/json
+
+{
+  "name": "video",
+  "match": ["video/mp4", "video/webm", "video/ogg"],
+  "steps": [
+    {
+      "id": "downscale",
+      "action": "downscale-video",
+      "input": "source",
+      "output": "_derived/{{basename}}/{{name}}",
+      "scanDir": true,
+      "scanExtensions": [".mp4", ".webm", ".ogg"],
+      "condition": {"config": "$:/config/rimir/file-pipeline/video-downscale", "equals": "yes"},
+      "params": {"dimensions": "{{config:$:/config/rimir/file-pipeline/video-max-dimension}}"},
+      "artifact": {"type": "downscale", "prefix": ".downscaled/", "tiddlerType": "video/mp4"}
+    },
+    {
+      "id": "frames",
+      "action": "extract-video-frames",
+      "input": "source",
+      "output": "_derived/{{basename}}/frame",
+      "scanDir": true,
+      "condition": {"config": "$:/config/rimir/file-pipeline/thumb-videos", "equals": "yes"},
+      "params": {"interval": "{{config:$:/config/rimir/file-pipeline/video-frame-interval}}"}
+    },
+    {
+      "id": "pick-thumb",
+      "type": "select",
+      "input": "step:frames",
+      "prompt": "Select a thumbnail for this video",
+      "artifact": {"setField": "_thumbnail_uri"}
+    }
+  ]
+}

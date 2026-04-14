@@ -1,0 +1,4 @@
+title: $:/plugins/rimir/file-pipeline/notifications/pipeline-running
+type: text/vnd.tiddlywiki
+
+Processing <<filename>> (<<pipeline>> pipeline)...

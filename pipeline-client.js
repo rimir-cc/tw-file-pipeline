@@ -12,7 +12,10 @@ creates artifact tiddlers from results, and handles LLM steps (auto + interactiv
 var STATUS_PREFIX = "$:/temp/rimir/file-pipeline/status/";
 var PENDING_PREFIX = "$:/temp/rimir/file-pipeline/pending/";
 var CHAT_PREFIX = "$:/temp/rimir/file-pipeline/chat/";
+var SELECT_PREFIX = "$:/temp/rimir/file-pipeline/select/";
+var SELECT_CHOICE = "$:/temp/rimir/file-pipeline/select-choice";
 var INTERACTIVE_STATE = "$:/state/rimir/file-pipeline/interactive";
+var SELECT_STATE = "$:/state/rimir/file-pipeline/select";
 
 /*
 Run a pipeline on a source file.
@@ -71,9 +74,12 @@ exports.runPipeline = function(options) {
 			}
 			if(data.status === "disabled" || data.status === "no-match") {
 				setStatus(sourceTitle, "");
+				if(options.onServerDone) options.onServerDone();
 				onComplete([]);
 				return;
 			}
+			// Server-side processing done — signal caller before client-side steps
+			if(options.onServerDone) options.onServerDone();
 			processResults(sourceTitle, options, data.results || [], onComplete, onError, onProgress);
 		}
 	});
@@ -116,6 +122,19 @@ function processResults(sourceTitle, options, results, onComplete, onError, onPr
 				// Interactive mode pause — save remaining steps for resume
 				savePendingState(sourceTitle, options, results, index, allResults);
 			});
+			return;
+		}
+
+		if(result.type === "select") {
+			// Select step — show selection UI and pause pipeline
+			if(!result.outputs || result.outputs.length === 0) {
+				// No candidates (e.g., frame extraction failed or very short video) — skip
+				allResults.push({stepId: result.stepId, skipped: true});
+				processStep(index + 1);
+				return;
+			}
+			setupSelectPanel(result.step, result.outputs, sourceTitle);
+			savePendingState(sourceTitle, options, results, index, allResults);
 			return;
 		}
 
@@ -392,6 +411,146 @@ exports.isExtractable = function(mimeType) {
 	}
 	return false;
 };
+
+// --- Select step ---
+
+function setupSelectPanel(step, outputs, sourceTitle) {
+	var selectTitle = SELECT_PREFIX + encodeURIComponent(sourceTitle);
+	// Single JSON tiddler with all data (avoids multi-tiddler prefix issues)
+	$tw.wiki.addTiddler(new $tw.Tiddler({
+		title: selectTitle,
+		type: "application/json",
+		text: JSON.stringify({
+			sourceTitle: sourceTitle,
+			prompt: step.prompt || "Select image(s)",
+			stepId: step.id,
+			artifact: step.artifact || {},
+			candidates: outputs.map(function(o) { return {uri: o.uri, filename: o.filename}; })
+		})
+	}));
+	// Clear any previous choice
+	$tw.wiki.addTiddler(new $tw.Tiddler({
+		title: SELECT_CHOICE,
+		text: ""
+	}));
+	// Signal UI
+	$tw.wiki.addTiddler(new $tw.Tiddler({
+		title: SELECT_STATE,
+		text: selectTitle
+	}));
+}
+
+/*
+Resume pipeline after user confirms frame selection.
+Called from handlers-startup.js via tm-fp-confirm-select.
+*/
+exports.resumeSelect = function(sourceTitle, selectedUri) {
+	// Read pending state
+	var pendingTitle = PENDING_PREFIX + encodeURIComponent(sourceTitle);
+	var pendingTiddler = $tw.wiki.getTiddler(pendingTitle);
+	if(!pendingTiddler) return;
+
+	var pending;
+	try {
+		pending = JSON.parse(pendingTiddler.fields.text);
+	} catch(e) { return; }
+
+	var selectTitle = SELECT_PREFIX + encodeURIComponent(sourceTitle);
+	var stepId = "select";
+	try {
+		var selectData = JSON.parse($tw.wiki.getTiddlerText(selectTitle) || "{}");
+		stepId = selectData.stepId || stepId;
+	} catch(e) {}
+
+	// Clean up state tiddlers immediately (panel closes)
+	cleanupSelectState(selectTitle);
+
+	if(!selectedUri) {
+		// User clicked "Skip" — no thumbnail, just resume
+		$tw.wiki.deleteTiddler(pendingTitle);
+		resumeRemaining(pending, [{stepId: stepId, skipped: true}]);
+		return;
+	}
+
+	// Find source canonical URI for the finalize call
+	var sourceTiddler = $tw.wiki.getTiddler(sourceTitle);
+	var sourceUri = sourceTiddler ? sourceTiddler.fields._canonical_uri : "";
+	if(!sourceUri) {
+		$tw.wiki.deleteTiddler(pendingTitle);
+		resumeRemaining(pending, [{stepId: stepId, error: "No _canonical_uri on source"}]);
+		return;
+	}
+
+	// Call finalize route: resize frame → _generated/, clean up _derived/
+	setStatus(sourceTitle, "Finalizing thumbnail...");
+	$tw.utils.httpRequest({
+		url: "/api/file-pipeline-finalize",
+		type: "POST",
+		headers: {"Content-Type": "application/json", "x-requested-with": "TiddlyWiki"},
+		data: JSON.stringify({sourceUri: sourceUri, frameUri: selectedUri}),
+		callback: function(err, responseText) {
+			setStatus(sourceTitle, "");
+			if(err) {
+				console.warn("file-pipeline finalize error:", err);
+				// Fallback: use raw frame URI as thumbnail
+				setFieldOnSource(sourceTitle, "_thumbnail_uri", selectedUri);
+			} else {
+				try {
+					var result = JSON.parse(responseText);
+					if(result.thumbnailUri) {
+						setFieldOnSource(sourceTitle, "_thumbnail_uri", result.thumbnailUri);
+					} else {
+						setFieldOnSource(sourceTitle, "_thumbnail_uri", selectedUri);
+					}
+				} catch(e) {
+					setFieldOnSource(sourceTitle, "_thumbnail_uri", selectedUri);
+				}
+			}
+			$tw.wiki.deleteTiddler(pendingTitle);
+			resumeRemaining(pending, [{stepId: stepId, selectedUri: selectedUri}]);
+		}
+	});
+};
+
+function resumeRemaining(pending, completedSteps) {
+	var remaining = pending.remainingResults || [];
+	var allResults = (pending.completedResults || []).concat(completedSteps);
+	processResults(pending.sourceTitle || "", pending.options || {}, remaining, function(results) {
+		var combined = allResults.concat(results);
+		if(pending.options && pending.options.onComplete) {
+			pending.options.onComplete(combined);
+		}
+	}, function() {}, function() {});
+}
+
+/*
+Cancel select — clean up state without creating artifacts.
+*/
+exports.cancelSelect = function(sourceTitle) {
+	var selectTitle = SELECT_PREFIX + encodeURIComponent(sourceTitle);
+	var pendingTitle = PENDING_PREFIX + encodeURIComponent(sourceTitle);
+	cleanupSelectState(selectTitle);
+	$tw.wiki.deleteTiddler(pendingTitle);
+	setStatus(sourceTitle, "");
+	// Clean up derived frames from disk
+	var sourceTiddler = $tw.wiki.getTiddler(sourceTitle);
+	var sourceUri = sourceTiddler ? sourceTiddler.fields._canonical_uri : "";
+	if(sourceUri) {
+		$tw.utils.httpRequest({
+			url: "/api/file-pipeline-finalize",
+			type: "POST",
+			headers: {"Content-Type": "application/json", "x-requested-with": "TiddlyWiki"},
+			data: JSON.stringify({sourceUri: sourceUri, frameUri: null}),
+			callback: function() {}
+		});
+	}
+};
+
+function cleanupSelectState(selectTitle) {
+	$tw.wiki.deleteTiddler(SELECT_STATE);
+	$tw.wiki.deleteTiddler(selectTitle);
+	$tw.wiki.deleteTiddler(SELECT_CHOICE);
+}
 
 // --- Helpers ---
 

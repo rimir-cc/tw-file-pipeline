@@ -40,6 +40,8 @@ Pipelines define processing steps that run automatically on uploaded files. Each
 
 <$checkbox tiddler="$:/config/rimir/file-pipeline/thumb-pdfs" field="text" checked="yes" unchecked="no"> Generate thumbnails for PDFs</$checkbox>
 
+<$checkbox tiddler="$:/config/rimir/file-pipeline/thumb-videos" field="text" checked="yes" unchecked="no"> Generate thumbnails for videos (frame selection)</$checkbox>
+
 Resolution: <$edit-text tiddler="$:/config/rimir/file-pipeline/thumb-resolution" tag="input" default="200" class="rr-input-sm"/> px
 
 !! Text Extraction
@@ -47,6 +49,14 @@ Resolution: <$edit-text tiddler="$:/config/rimir/file-pipeline/thumb-resolution"
 <$checkbox tiddler="$:/config/rimir/file-pipeline/extract-images" field="text" checked="yes" unchecked="no"> Extract embedded images from PDFs (requires `pdfimages`)</$checkbox>
 
 Max extraction size: <$edit-text tiddler="$:/config/rimir/file-pipeline/max-extraction-size" tag="input" default="500000" class="rr-input-sm"/> characters
+
+!! Video Processing
+
+<$checkbox tiddler="$:/config/rimir/file-pipeline/video-downscale" field="text" checked="yes" unchecked="no"> Generate downscaled video versions</$checkbox>
+
+Max dimension: <$edit-text tiddler="$:/config/rimir/file-pipeline/video-max-dimension" tag="input" default="720" class="rr-input-sm"/> px (longest side, no upscaling)
+
+Frame extraction interval: <$edit-text tiddler="$:/config/rimir/file-pipeline/video-frame-interval" tag="input" default="5" class="rr-input-sm"/> seconds (frames from the first 60s are shown for thumbnail selection)
 
 !! Prompt Templates
 

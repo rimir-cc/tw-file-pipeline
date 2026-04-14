@@ -214,7 +214,7 @@ function executeCommand(step, inputPath, outputPath, callback) {
 	child_process.exec(command, {
 		cwd: $tw.boot.wikiPath,
 		maxBuffer: 10 * 1024 * 1024,
-		timeout: 120000
+		timeout: 300000
 	}, function(err, stdout, stderr) {
 		if(err) {
 			logger.log("Step '" + step.id + "' failed: " + err.message);
@@ -226,13 +226,16 @@ function executeCommand(step, inputPath, outputPath, callback) {
 	});
 }
 
-function scanDirectory(dirPath) {
+var DEFAULT_SCAN_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+
+function scanDirectory(dirPath, extensions) {
+	var allowedExts = extensions || DEFAULT_SCAN_EXTENSIONS;
 	var outputs = [];
 	try {
 		var files = fs.readdirSync(dirPath);
 		for(var i = 0; i < files.length; i++) {
 			var ext = path.extname(files[i]).toLowerCase();
-			if(ext === ".png" || ext === ".jpg" || ext === ".jpeg" || ext === ".gif" || ext === ".webp") {
+			if(allowedExts.indexOf(ext) !== -1) {
 				outputs.push({
 					filename: files[i],
 					filePath: path.join(dirPath, files[i])
@@ -260,6 +263,7 @@ Parameters:
 Each result in the array:
   { stepId, skipped: true }                                  — condition not met
   { stepId, type: "llm", step: <stepDef>, inputText: "..." } — LLM marker for client
+  { stepId, type: "select", step: <stepDef>, outputs: [...] } — select marker for client
   { stepId, uri, outputPath, artifact }                      — single file output
   { stepId, text, artifact }                                 — captured stdout text
   { stepId, outputs: [{filename, uri, filePath}], artifact } — multi-file output (scanDir)
@@ -284,6 +288,25 @@ exports.runPipeline = function(def, inputPath, canonicalUri, basePath, callback)
 			var skipped = {stepId: step.id, skipped: true};
 			stepResults[step.id] = skipped;
 			allResults.push(skipped);
+			runStep(index + 1);
+			return;
+		}
+
+		// Select steps are client-side — return marker with candidate outputs from referenced step
+		if(stepType === "select") {
+			var selectRef = (step.input || "").match(/^step:(.+)$/);
+			var candidateOutputs = [];
+			if(selectRef && stepResults[selectRef[1]] && stepResults[selectRef[1]].outputs) {
+				candidateOutputs = stepResults[selectRef[1]].outputs;
+			}
+			var selectMarker = {
+				stepId: step.id,
+				type: "select",
+				step: step,
+				outputs: candidateOutputs
+			};
+			stepResults[step.id] = selectMarker;
+			allResults.push(selectMarker);
 			runStep(index + 1);
 			return;
 		}
@@ -337,7 +360,7 @@ exports.runPipeline = function(def, inputPath, canonicalUri, basePath, callback)
 			} else if(step.scanDir && outputPath) {
 				// Multiple output files — scan the output directory
 				var scanPath = path.dirname(outputPath);
-				var files = scanDirectory(scanPath);
+				var files = scanDirectory(scanPath, step.scanExtensions);
 				result.outputs = [];
 				for(var f = 0; f < files.length; f++) {
 					var relToSource = path.relative(sourceDir, files[f].filePath).replace(/\\/g, "/");

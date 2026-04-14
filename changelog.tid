@@ -4,5 +4,6 @@ type: text/vnd.tiddlywiki
 ! Changelog
 
 |!Version |!Date |!Changes |
+|0.1.2 |2026-04-14 |Video pipeline: frame extraction (ffmpeg), interactive thumbnail selection panel, finalize route (resize + move to `_generated/`). New `select` step type in executor/client. Browser-side message handlers startup module. Configurable video settings (thumb toggle, frame interval, max dimension for downscale). `force_original_aspect_ratio` for downscale (no upscaling, aspect-safe). Executor timeout increased to 5min. `scanDirectory` supports configurable extensions |
 |0.1.1 |2026-04-09 |Dropzone-level LLM config: 3-tier priority (step > dropzone > global) for provider, model, system-prompt |
 |0.1.0 |2026-04-08 |Initial release: pipeline executor, route, client library. Command steps (thumbnails, text extraction, format conversion, image extraction). LLM steps (auto + interactive modes). Default pipelines for PDF, DOCX, XLSX, images. Prompt template system. Settings UI |
