@@ -210,11 +210,13 @@ function executeCommand(step, inputPath, outputPath, callback) {
 			command = command.split("{{" + key + "}}").join(val);
 		}
 	}
+	// Per-step timeout: step.timeout (seconds) > default 5min, 0 = no timeout
+	var timeoutMs = step.timeout !== undefined ? parseInt(step.timeout) * 1000 : 300000;
 	logger.log("Executing: " + command);
 	child_process.exec(command, {
 		cwd: $tw.boot.wikiPath,
 		maxBuffer: 10 * 1024 * 1024,
-		timeout: 300000
+		timeout: timeoutMs
 	}, function(err, stdout, stderr) {
 		if(err) {
 			logger.log("Step '" + step.id + "' failed: " + err.message);

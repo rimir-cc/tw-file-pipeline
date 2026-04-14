@@ -15,7 +15,8 @@ type: application/json
       "scanExtensions": [".mp4", ".webm", ".ogg"],
       "condition": {"config": "$:/config/rimir/file-pipeline/video-downscale", "equals": "yes"},
       "params": {"dimensions": "{{config:$:/config/rimir/file-pipeline/video-max-dimension}}"},
-      "artifact": {"type": "downscale", "prefix": ".downscaled/", "tiddlerType": "video/mp4"}
+      "artifact": {"type": "downscale", "prefix": ".downscaled/", "tiddlerType": "video/mp4"},
+      "timeout": 3600
     },
     {
       "id": "frames",
@@ -24,7 +25,8 @@ type: application/json
       "output": "_derived/{{basename}}/frame",
       "scanDir": true,
       "condition": {"config": "$:/config/rimir/file-pipeline/thumb-videos", "equals": "yes"},
-      "params": {"interval": "{{config:$:/config/rimir/file-pipeline/video-frame-interval}}"}
+      "params": {"interval": "{{config:$:/config/rimir/file-pipeline/video-frame-interval}}"},
+      "timeout": 600
     },
     {
       "id": "pick-thumb",
