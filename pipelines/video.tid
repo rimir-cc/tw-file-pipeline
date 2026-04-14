@@ -10,7 +10,7 @@ type: application/json
       "id": "downscale",
       "action": "downscale-video",
       "input": "source",
-      "output": "_derived/{{basename}}/{{name}}",
+      "output": "_generated/{{name}}",
       "scanDir": true,
       "scanExtensions": [".mp4", ".webm", ".ogg"],
       "condition": {"config": "$:/config/rimir/file-pipeline/video-downscale", "equals": "yes"},
