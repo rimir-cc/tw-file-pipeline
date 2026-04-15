@@ -8,9 +8,9 @@ type: application/json
         "description": "Generate image thumbnail"
     },
     "thumb-pdf": {
-        "command": "magick {{input}}[0] -thumbnail \"{{resolution}}>\" {{output}}",
-        "params": ["input", "output", "resolution"],
-        "description": "Generate PDF first-page thumbnail as PNG"
+        "command": "bash -c 'out={{output}}; pdftoppm -png -f 1 -l 1 -singlefile -scale-to {{maxdim}} {{input}} \"${out%.png}\"'",
+        "params": ["input", "output", "maxdim"],
+        "description": "Generate PDF first-page thumbnail as PNG via pdftoppm (poppler-utils). Avoids the ImageMagick+Ghostscript png16malpha device compatibility issue"
     },
     "extract-pdf-text": {
         "command": "pdftotext -layout {{input}} -",

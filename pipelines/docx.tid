@@ -19,7 +19,7 @@ type: application/json
       "action": "thumb-pdf",
       "input": "step:to-pdf",
       "output": "_generated/{{name}}_thumb.png",
-      "params": {"resolution": "{{config:$:/config/rimir/file-pipeline/thumb-resolution}}"},
+      "params": {"maxdim": "{{config:$:/config/rimir/file-pipeline/thumb-resolution}}"},
       "artifact": {"setField": "_thumbnail_uri"}
     },
     {
