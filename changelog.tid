@@ -4,6 +4,7 @@ type: text/vnd.tiddlywiki
 ! Changelog
 
 |!Version |!Date |!Changes |
+|0.1.4 |2026-04-15 |Fix: `scanDir` branch of pipeline executor filtered scanned files by the resolved output basename prefix. Previously, a shared output directory (e.g. `_generated/` for video downscale) could leak files from earlier uploads into the current step's artifact results, creating spurious tiddlers bound to the new source |
 |0.1.3 |2026-04-14 |Downscale output to `_generated/` (survives frame cleanup). Draggable + resizable thumbnail selection panel (JS). ffmpeg `-loglevel error` for quiet server logs. Panel centered with scrollable body |
 |0.1.2 |2026-04-14 |Video pipeline: frame extraction (ffmpeg), interactive thumbnail selection panel, finalize route (resize + move to `_generated/`). New `select` step type in executor/client. Browser-side message handlers startup module. Configurable video settings (thumb toggle, frame interval, max dimension for downscale). `force_original_aspect_ratio` for downscale (no upscaling, aspect-safe). Executor timeout increased to 5min. `scanDirectory` supports configurable extensions |
 |0.1.1 |2026-04-09 |Dropzone-level LLM config: 3-tier priority (step > dropzone > global) for provider, model, system-prompt |

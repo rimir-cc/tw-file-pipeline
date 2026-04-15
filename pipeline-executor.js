@@ -370,11 +370,16 @@ exports.runPipeline = function(def, inputPath, canonicalUri, basePath, callback)
 				}
 				result.text = text;
 			} else if(step.scanDir && outputPath) {
-				// Multiple output files — scan the output directory
+				// Multiple output files — scan the output directory, but only pick up
+				// files matching the resolved output basename prefix. Without this,
+				// a shared scan directory (e.g. `_generated/`) would leak files from
+				// previous sources into this step's results.
 				var scanPath = path.dirname(outputPath);
+				var outputBasename = path.basename(outputPath);
 				var files = scanDirectory(scanPath, step.scanExtensions);
 				result.outputs = [];
 				for(var f = 0; f < files.length; f++) {
+					if(files[f].filename.indexOf(outputBasename) !== 0) continue;
 					var relToSource = path.relative(sourceDir, files[f].filePath).replace(/\\/g, "/");
 					result.outputs.push({
 						filename: files[f].filename,
