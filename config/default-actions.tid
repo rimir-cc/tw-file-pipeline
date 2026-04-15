@@ -3,9 +3,9 @@ type: application/json
 
 {
     "thumb-image": {
-        "command": "magick {{input}} -thumbnail \"{{resolution}}>\" {{output}}",
+        "command": "magick {{input}} -auto-orient -thumbnail \"{{resolution}}>\" {{output}}",
         "params": ["input", "output", "resolution"],
-        "description": "Generate image thumbnail"
+        "description": "Generate image thumbnail. -auto-orient applies the EXIF orientation tag so portrait-tagged images render upright"
     },
     "thumb-pdf": {
         "command": "bash -c 'out={{output}}; pdftoppm -png -f 1 -l 1 -singlefile -scale-to {{maxdim}} {{input}} \"${out%.png}\"'",

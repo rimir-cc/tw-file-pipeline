@@ -4,6 +4,7 @@ type: text/vnd.tiddlywiki
 ! Changelog
 
 |!Version |!Date |!Changes |
+|0.1.6 |2026-04-15 |Image thumbnails respect EXIF orientation (`-auto-orient` added to `thumb-image` action). Portrait-tagged photos from phones/cameras now render upright instead of landscape. Finalize route (video-frame thumbnail resize) also uses `-auto-orient` as a safety net; video pipelines unaffected in practice since ffmpeg's autorotate is default-enabled and strips rotation metadata during frame extraction and downscaling |
 |0.1.5 |2026-04-15 |PDF thumbnails now use `pdftoppm` (poppler-utils) instead of `magick`. Fixes `Unknown device: png16malpha` on systems with Ghostscript 10+ where ImageMagick's PDF delegate requests a legacy device. `thumb-pdf` action param renamed `resolution` → `maxdim` (pdftoppm takes a single scale value, not NxN); pdf.tid and docx.tid updated accordingly |
 |0.1.4 |2026-04-15 |Fix: `scanDir` branch of pipeline executor filtered scanned files by the resolved output basename prefix. Previously, a shared output directory (e.g. `_generated/` for video downscale) could leak files from earlier uploads into the current step's artifact results, creating spurious tiddlers bound to the new source |
 |0.1.3 |2026-04-14 |Downscale output to `_generated/` (survives frame cleanup). Draggable + resizable thumbnail selection panel (JS). ffmpeg `-loglevel error` for quiet server logs. Panel centered with scrollable body |

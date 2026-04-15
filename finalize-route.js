@@ -109,8 +109,10 @@ exports.handler = function(request, response, state) {
 	$tw.utils.createDirectory(generatedDir);
 	var outputPath = path.join(generatedDir, sourceParsed.name + "_thumb.png");
 
-	// Resize frame using ImageMagick
-	var command = 'magick "' + frameResolved.filePath + '" -thumbnail "' + resolution + '>" "' + outputPath + '"';
+	// Resize frame using ImageMagick. -auto-orient is defensive: ffmpeg autorotate
+	// normally strips rotation metadata on extracted frames, but this is a no-op
+	// in that case and guards against any edge case that leaves EXIF orientation.
+	var command = 'magick "' + frameResolved.filePath + '" -auto-orient -thumbnail "' + resolution + '>" "' + outputPath + '"';
 	logger.log("Resizing frame to thumbnail: " + sourceParsed.name + "_thumb.png (" + resolution + ")");
 
 	child_process.exec(command, {
