@@ -28,7 +28,7 @@ Configurable binary data processing pipelines for TiddlyWiki. Define multi-step 
 * ''runner'' plugin — provides `runner-actions.json` command execution
 * ''file-upload'' plugin — provides URI resolution and artifact cascade
 * ''llm-connect'' plugin — required only for LLM pipeline steps
-* External tools: `magick` / `magick.exe` (thumbnails), `pdftotext` (PDF text), `pandoc` (DOCX/markdown), `pdfimages` (PDF images), `libreoffice` (DOC→DOCX, DOCX→PDF)
+* External tools: `magick` (thumbnails), `pdftotext` (PDF text), `pandoc` (DOCX/markdown), `pdfimages` (PDF images), `libreoffice` (DOC→DOCX, DOCX→PDF)
 
 !! LLM Step Configuration
 

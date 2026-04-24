@@ -28,7 +28,7 @@ Configurable binary data processing pipelines for TiddlyWiki. Define multi-step 
 - **llm-connect** plugin — required only for LLM pipeline steps (optional)
 
 External tools (as needed by your pipelines):
-- `magick` / `magick.exe` — ImageMagick for thumbnails
+- `magick` — ImageMagick for thumbnails
 - `pdftotext` — poppler-utils for PDF text extraction
 - `pdfimages` — poppler-utils for PDF image extraction
 - `pandoc` — for DOCX/markdown conversion
