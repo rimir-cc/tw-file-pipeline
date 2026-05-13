@@ -186,7 +186,7 @@ function buildOutputUri(outputPath, canonicalUri, basePath) {
 	return locationPrefix + relToBase;
 }
 
-function executeCommand(step, inputPath, outputPath, callback) {
+function executeCommand(step, inputPath, outputPath, canonicalUri, callback) {
 	var actions = loadActions();
 	var actionDef = actions[step.action];
 	if(!actionDef || !actionDef.command) {
@@ -208,6 +208,9 @@ function executeCommand(step, inputPath, outputPath, callback) {
 	command = command.split("{{input}}").join('"' + inputPath + '"');
 	if(outputPath) {
 		command = command.split("{{output}}").join('"' + outputPath + '"');
+	}
+	if(canonicalUri) {
+		command = command.split("{{canonical_uri}}").join('"' + canonicalUri + '"');
 	}
 	// Resolve params
 	if(step.params) {
@@ -349,7 +352,7 @@ exports.runPipeline = function(def, inputPath, canonicalUri, basePath, callback)
 		var outputPath = buildOutputPath(step, stepInput, sourceDir);
 		var outputFilePath = buildOutputFilePath(step, stepInput, sourceDir);
 
-		executeCommand(step, stepInput, outputPath, function(err, stdout) {
+		executeCommand(step, stepInput, outputPath, canonicalUri, function(err, stdout) {
 			if(err) {
 				// Step failed — skip but continue pipeline
 				var errResult = {stepId: step.id, error: err.message};

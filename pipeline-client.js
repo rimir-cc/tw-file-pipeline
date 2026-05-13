@@ -169,13 +169,31 @@ function processResults(sourceTitle, options, results, onComplete, onError, onPr
 function createTextArtifact(sourceTitle, artifact, text) {
 	if(!artifact || !artifact.suffix) return;
 	var title = sourceTitle + artifact.suffix;
-	var fields = {
+	var type = artifact.tiddlerType || "text/vnd.tiddlywiki";
+	// Run any registered tiddler-deserializer for the artifact type so
+	// embedded metadata (e.g. YAML frontmatter for
+	// `text/x-frontmattered-markdown`) becomes real tiddler fields instead
+	// of staying in the body. Types without a deserializer fall back to
+	// the default, which just sets `text`.
+	var parsedFields = {text: text};
+	try {
+		var deserialized = $tw.wiki.deserializeTiddlers(type, text, {}) || [];
+		if(deserialized.length > 0) {
+			parsedFields = deserialized[0];
+			if(parsedFields.text === undefined) {
+				parsedFields.text = text;
+			}
+		}
+	} catch(e) {
+		// Fall through with raw text
+	}
+	// Artifact metadata always wins over anything in the parsed frontmatter.
+	var fields = $tw.utils.extend({}, parsedFields, {
 		title: title,
-		text: text,
-		type: artifact.tiddlerType || "text/vnd.tiddlywiki",
+		type: type,
 		"_artifact_source": sourceTitle,
 		"_artifact_type": artifact.type || "extraction"
-	};
+	});
 	// Legacy field for backward compat with llm-connect
 	if(artifact.type === "extraction") {
 		fields["extraction-source"] = sourceTitle;

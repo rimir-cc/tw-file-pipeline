@@ -76,3 +76,18 @@ This allows a single pipeline definition to be reused across different dropzones
 !! Artifact Lifecycle
 
 All generated tiddlers carry `_artifact_source` (pointing to the original file) and `_artifact_type` fields. The file-upload plugin's cascade system automatically handles delete and rename propagation.
+
+!! Template variables in command actions
+
+The runner-action `command` template (in `runner-actions.json` or the bundled `$:/config/rimir/file-pipeline/default-actions`) can reference three built-in variables, all auto-quoted with double quotes by the executor so paths with spaces survive intact:
+
+|!Variable |!Resolves to |
+|`{{input}}` |Absolute filesystem path of the source file (or, for chained steps, the prior step's output path) |
+|`{{output}}` |Absolute filesystem path of the step's resolved `output` template (after `path.resolve`, which strips trailing slashes) |
+|`{{canonical_uri}}` |The source tiddler's `_canonical_uri` (the served URL prefix; e.g. `/files/email/foo.msg` for the default location, `/work/.../foo.msg` for orga-apps). Use this to derive served URLs for any files the action writes — the filesystem path is not the URL for non-default file-upload locations |
+
+User-defined step `params` are substituted into the command as `{{paramname}}` AFTER the built-ins; they are NOT auto-quoted, so quote them explicitly in the action template if they might contain spaces or shell metacharacters.
+
+!! Artifact deserialization
+
+`createTextArtifact` (`pipeline-client.js`) routes captured stdout through `$tw.wiki.deserializeTiddlers(type, text, {})` before storing the artifact. Any `tiddlerdeserializer` registered for the artifact's `type` runs, so embedded metadata becomes real tiddler fields. For `text/x-frontmattered-markdown` artifacts (e.g. `rimir/msg-import`'s `.email` output) this means YAML frontmatter at the top of the body is parsed into fields instead of staying as literal text. Types without a registered deserializer fall back to the default (text-only) — backward-compatible with existing pipelines that produce plain `text/x-markdown`.
