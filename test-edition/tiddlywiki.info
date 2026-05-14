@@ -1,0 +1,11 @@
+{
+    "description": "Test edition for file-pipeline",
+    "plugins": [
+        "tiddlywiki/jasmine",
+        "rimir/file-pipeline"
+    ],
+    "themes": [
+        "tiddlywiki/vanilla",
+        "tiddlywiki/snowwhite"
+    ]
+}

@@ -91,3 +91,13 @@ User-defined step `params` are substituted into the command as `{{paramname}}` A
 !! Artifact deserialization
 
 `createTextArtifact` (`pipeline-client.js`) routes captured stdout through `$tw.wiki.deserializeTiddlers(type, text, {})` before storing the artifact. Any `tiddlerdeserializer` registered for the artifact's `type` runs, so embedded metadata becomes real tiddler fields. For `text/x-frontmattered-markdown` artifacts (e.g. `rimir/msg-import`'s `.email` output) this means YAML frontmatter at the top of the body is parsed into fields instead of staying as literal text. Types without a registered deserializer fall back to the default (text-only) — backward-compatible with existing pipelines that produce plain `text/x-markdown`.
+
+!! Per-output MIME inference for multi-file artifacts
+
+Multi-file scanDir steps (`createMultiFileArtifacts` in `pipeline-client.js`) used to default every output's tiddler `type` to `image/png`, regardless of the file extension. Since 0.1.10, each output's MIME is inferred from its filename using a built-in extension table plus `$tw.config.fileExtensionInfo` as a fallback. PDF, .msg, .docx etc. attachments now arrive as their real types — downstream MIME-branching UIs (e.g. orga-apps' attachment grid) finally render them correctly. Pipeline definitions can still pin a fixed `tiddlerType` on an `artifact` block to override the inference.
+
+!! Nested-pipeline triggering and cycle protection
+
+After each artifact is created, `createMultiFileArtifacts` invokes the browser-side hook `rimir-file-pipeline-artifact-created` with `{title, type, uri, sourceTitle, seen}`. The bundled `nested-trigger-startup` module listens on the hook: if the artifact's MIME matches a registered pipeline AND its URI is not already in the recursion's `seen` map, the module calls `pipeline-client.runPipeline` for it with an extended `seen`. The result: a PDF attachment of a `.msg` gets the PDF pipeline (thumbnail + text extraction) automatically; an attached `.msg` gets its own `.email` recursively. Cycle protection uses `seen` keyed by URI — a `.msg` that references itself by content short-circuits instead of looping forever.
+
+Recursion depth is bounded in practice by title prefixes (each level adds `.attachments/<name>` to the parent's title) and by file-upload's content-hash dedup. There is no hard depth cap.

@@ -17,6 +17,81 @@ var SELECT_CHOICE = "$:/temp/rimir/file-pipeline/select-choice";
 var INTERACTIVE_STATE = "$:/state/rimir/file-pipeline/interactive";
 var SELECT_STATE = "$:/state/rimir/file-pipeline/select";
 
+// MIME lookup for the most common extensions we see flowing through pipelines.
+// Used by createMultiFileArtifacts so each scanned output gets a sensible
+// tiddler `type` (the old default of image/png for every output left non-image
+// attachments — PDFs, .msg etc. — mistyped and invisible to MIME-branching UIs).
+var MIME_BY_EXT = {
+	".pdf": "application/pdf",
+	".msg": "application/vnd.ms-outlook",
+	".eml": "message/rfc822",
+	".png": "image/png",
+	".jpg": "image/jpeg",
+	".jpeg": "image/jpeg",
+	".gif": "image/gif",
+	".webp": "image/webp",
+	".svg": "image/svg+xml",
+	".bmp": "image/bmp",
+	".tif": "image/tiff",
+	".tiff": "image/tiff",
+	".heic": "image/heic",
+	".doc": "application/msword",
+	".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	".xls": "application/vnd.ms-excel",
+	".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	".ppt": "application/vnd.ms-powerpoint",
+	".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+	".odt": "application/vnd.oasis.opendocument.text",
+	".ods": "application/vnd.oasis.opendocument.spreadsheet",
+	".odp": "application/vnd.oasis.opendocument.presentation",
+	".rtf": "application/rtf",
+	".txt": "text/plain",
+	".csv": "text/csv",
+	".log": "text/plain",
+	".md": "text/markdown",
+	".markdown": "text/markdown",
+	".html": "text/html",
+	".htm": "text/html",
+	".json": "application/json",
+	".xml": "application/xml",
+	".zip": "application/zip",
+	".rar": "application/vnd.rar",
+	".7z": "application/x-7z-compressed",
+	".tar": "application/x-tar",
+	".gz": "application/gzip",
+	".ics": "text/calendar",
+	".vcf": "text/vcard",
+	".mp3": "audio/mpeg",
+	".mp4": "video/mp4",
+	".mov": "video/quicktime",
+	".avi": "video/x-msvideo",
+	".webm": "video/webm",
+	".ogg": "audio/ogg",
+	".wav": "audio/wav"
+};
+
+function inferMimeFromFilename(filename) {
+	if(!filename || typeof filename !== "string") return "application/octet-stream";
+	var dot = filename.lastIndexOf(".");
+	if(dot < 0) return "application/octet-stream";
+	var ext = filename.substring(dot).toLowerCase();
+	if(MIME_BY_EXT[ext]) return MIME_BY_EXT[ext];
+	// Fall back to TW's built-in extension table (covers a few extras we don't list).
+	if($tw.config && $tw.config.fileExtensionInfo && $tw.config.fileExtensionInfo[ext]) {
+		return $tw.config.fileExtensionInfo[ext].type || "application/octet-stream";
+	}
+	return "application/octet-stream";
+}
+
+exports.inferMimeFromFilename = inferMimeFromFilename;
+
+// Internal helpers exposed for unit tests only.
+exports._test = {
+	createMultiFileArtifacts: function(sourceTitle, artifact, outputs, seen) {
+		return createMultiFileArtifacts(sourceTitle, artifact, outputs, seen);
+	}
+};
+
 /*
 Run a pipeline on a source file.
 
@@ -29,10 +104,15 @@ Options:
   onComplete — function(results) called when all steps (incl. LLM) are done
   onError    — function(error) called on failure
   onProgress — function(stepId, status) called per step
+  seen       — optional Object<uri, true> tracking artifacts already pipelined in
+               the current recursion chain. Top-level callers omit it; nested
+               triggers (see nested-trigger-startup.js) pass an extended copy so
+               we don't loop on self-referential .msg files etc.
 */
 exports.runPipeline = function(options) {
 	var sourceTitle = options.sourceTitle;
 	var uri = options.uri;
+	var seen = options.seen || {};
 	var onComplete = options.onComplete || function() {};
 	var onError = options.onError || function() {};
 	var onProgress = options.onProgress || function() {};
@@ -80,7 +160,7 @@ exports.runPipeline = function(options) {
 			}
 			// Server-side processing done — signal caller before client-side steps
 			if(options.onServerDone) options.onServerDone();
-			processResults(sourceTitle, options, data.results || [], onComplete, onError, onProgress);
+			processResults(sourceTitle, options, data.results || [], seen, onComplete, onError, onProgress);
 		}
 	});
 };
@@ -88,7 +168,7 @@ exports.runPipeline = function(options) {
 /*
 Process server results: create artifacts for command steps, execute LLM steps.
 */
-function processResults(sourceTitle, options, results, onComplete, onError, onProgress) {
+function processResults(sourceTitle, options, results, seen, onComplete, onError, onProgress) {
 	var extractedText = null;
 	var allResults = [];
 
@@ -147,7 +227,7 @@ function processResults(sourceTitle, options, results, onComplete, onError, onPr
 			}
 		} else if(result.outputs) {
 			// Multi-file output → multiple artifacts
-			createMultiFileArtifacts(sourceTitle, result.artifact, result.outputs);
+			createMultiFileArtifacts(sourceTitle, result.artifact, result.outputs, seen);
 		} else if(result.uri) {
 			// Single file output
 			if(result.artifact && result.artifact.setField) {
@@ -215,19 +295,34 @@ function createFileArtifact(sourceTitle, artifact, uri) {
 	}));
 }
 
-function createMultiFileArtifacts(sourceTitle, artifact, outputs) {
+function createMultiFileArtifacts(sourceTitle, artifact, outputs, seen) {
 	if(!artifact || !artifact.prefix) return;
 	for(var i = 0; i < outputs.length; i++) {
 		var output = outputs[i];
 		var title = sourceTitle + artifact.prefix + output.filename;
+		// Type precedence: explicit artifact.tiddlerType > inferred-from-extension >
+		// application/octet-stream. The previous default of image/png left every
+		// non-image attachment (PDF, .msg, .docx, ...) mistyped.
+		var type = artifact.tiddlerType || inferMimeFromFilename(output.filename);
 		$tw.wiki.addTiddler(new $tw.Tiddler({
 			title: title,
 			text: "",
-			type: artifact.tiddlerType || "image/png",
+			type: type,
 			_canonical_uri: output.uri,
 			"_artifact_source": sourceTitle,
 			"_artifact_type": artifact.type || "derived"
 		}));
+		// Let any orchestrator (nested-trigger-startup, custom plugins) decide
+		// whether to recursively process this artifact through its own pipeline.
+		if($tw.hooks && typeof $tw.hooks.invokeHook === "function") {
+			$tw.hooks.invokeHook("rimir-file-pipeline-artifact-created", {
+				title: title,
+				type: type,
+				uri: output.uri,
+				sourceTitle: sourceTitle,
+				seen: seen || {}
+			});
+		}
 	}
 }
 
@@ -361,7 +456,7 @@ exports.resumeInteractive = function(sourceTitle, responseText) {
 	var allResults = pending.completedResults || [];
 	allResults.push({stepId: step ? step.id : "interactive", text: responseText});
 
-	processResults(sourceTitle, pending.options || {}, remaining, function(results) {
+	processResults(sourceTitle, pending.options || {}, remaining, pending.seen || {}, function(results) {
 		var combined = allResults.concat(results);
 		if(pending.options && pending.options.onComplete) {
 			pending.options.onComplete(combined);
@@ -402,6 +497,29 @@ exports.getExtractedText = function(title) {
 	var tiddler = $tw.wiki.getTiddler(cacheTitle);
 	if(!tiddler) return null;
 	return tiddler.fields.text || null;
+};
+
+/*
+Check if any registered pipeline declares a `match` for the given MIME type.
+Lighter than isExtractable — returns true for any matching pipeline (thumb,
+extraction, LLM, etc.), not only those with text-extraction steps. Used by
+the nested-trigger startup to decide whether recursing is worth it.
+*/
+exports.matchesAnyPipeline = function(mimeType) {
+	if(!mimeType) return false;
+	var TAG = "$:/tags/rimir/file-pipeline/pipeline";
+	var titles = $tw.wiki.filterTiddlers("[all[tiddlers+shadows]tag[" + TAG + "]]");
+	for(var i = 0; i < titles.length; i++) {
+		var tiddler = $tw.wiki.getTiddler(titles[i]);
+		if(!tiddler) continue;
+		try {
+			var def = JSON.parse(tiddler.fields.text);
+			if(Array.isArray(def.match) && def.match.indexOf(mimeType) !== -1) {
+				return true;
+			}
+		} catch(e) { /* skip malformed pipeline definitions */ }
+	}
+	return false;
 };
 
 /*
@@ -533,7 +651,7 @@ exports.resumeSelect = function(sourceTitle, selectedUri) {
 function resumeRemaining(pending, completedSteps) {
 	var remaining = pending.remainingResults || [];
 	var allResults = (pending.completedResults || []).concat(completedSteps);
-	processResults(pending.sourceTitle || "", pending.options || {}, remaining, function(results) {
+	processResults(pending.sourceTitle || "", pending.options || {}, remaining, pending.seen || {}, function(results) {
 		var combined = allResults.concat(results);
 		if(pending.options && pending.options.onComplete) {
 			pending.options.onComplete(combined);
