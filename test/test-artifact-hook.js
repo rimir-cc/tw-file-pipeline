@@ -142,6 +142,52 @@ var src = "$:/test/fp/no-seen-" + Date.now();
 		}
 	});
 
+	it("inherits pa.parent from the source tiddler onto each artifact", function() {
+		// Artifacts produced from a parent that's anchored to an orga-apps note
+		// (via pa.parent) must share the same anchor so the note's attachment
+		// grid surfaces them — without this, PDF attachments of a .msg dropped
+		// on a note were tracked correctly via _artifact_source but never
+		// rendered because the grid filters by pa.parent.
+		var src = "$:/test/fp/inherit-context-" + Date.now();
+		$tw.wiki.addTiddler(new $tw.Tiddler({
+			title: src,
+			type: "application/vnd.ms-outlook",
+			"pa.parent": "work/some-note"
+		}));
+		try {
+			client._test.createMultiFileArtifacts(
+				src,
+				{prefix: ".attachments/", type: "attachment"},
+				[{filename: "att_x.pdf", uri: "/u/att_x.pdf"}],
+				{}
+			);
+			var artTiddler = $tw.wiki.getTiddler(src + ".attachments/att_x.pdf");
+			expect(artTiddler).toBeTruthy();
+			expect(artTiddler.fields["pa.parent"]).toBe("work/some-note");
+		} finally {
+			$tw.wiki.deleteTiddler(src);
+			$tw.wiki.deleteTiddler(src + ".attachments/att_x.pdf");
+		}
+	});
+
+	it("does NOT add pa.parent when the source has none", function() {
+		var src = "$:/test/fp/no-context-" + Date.now();
+		$tw.wiki.addTiddler(new $tw.Tiddler({title: src, type: "application/vnd.ms-outlook"}));
+		try {
+			client._test.createMultiFileArtifacts(
+				src,
+				{prefix: ".attachments/"},
+				[{filename: "att_y.pdf", uri: "/u/att_y.pdf"}],
+				{}
+			);
+			var artTiddler = $tw.wiki.getTiddler(src + ".attachments/att_y.pdf");
+			expect(artTiddler.fields["pa.parent"]).toBeUndefined();
+		} finally {
+			$tw.wiki.deleteTiddler(src);
+			$tw.wiki.deleteTiddler(src + ".attachments/att_y.pdf");
+		}
+	});
+
 	it("does nothing when artifact has no prefix", function() {
 client._test.createMultiFileArtifacts(
 			"$:/test/fp/no-prefix",

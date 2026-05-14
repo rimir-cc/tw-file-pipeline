@@ -246,6 +246,26 @@ function processResults(sourceTitle, options, results, seen, onComplete, onError
 
 // --- Artifact creation ---
 
+/*
+Inherit namespace/app-context fields from the source tiddler onto a new
+artifact. Today this is just `pa.parent` (set by orga-apps' dropzone to
+anchor an upload to its current note), but the function is the natural
+extension point if more such fields surface. Without this, artifact
+tiddlers produced by a recursive pipeline (e.g. PDF attachments of a
+.msg dropped onto an orga-apps note) would be invisible to views that
+filter by `pa.parent` — the user would see the parent .msg in the
+attachment grid but never its inner PDFs.
+*/
+function inheritContextFields(sourceTitle) {
+	var out = {};
+	var sourceTiddler = $tw.wiki.getTiddler(sourceTitle);
+	if(!sourceTiddler) return out;
+	if(sourceTiddler.fields["pa.parent"]) {
+		out["pa.parent"] = sourceTiddler.fields["pa.parent"];
+	}
+	return out;
+}
+
 function createTextArtifact(sourceTitle, artifact, text) {
 	if(!artifact || !artifact.suffix) return;
 	var title = sourceTitle + artifact.suffix;
@@ -268,7 +288,9 @@ function createTextArtifact(sourceTitle, artifact, text) {
 		// Fall through with raw text
 	}
 	// Artifact metadata always wins over anything in the parsed frontmatter.
-	var fields = $tw.utils.extend({}, parsedFields, {
+	// Inherited context (pa.parent etc.) wins over parsed fields but loses
+	// to artifact metadata.
+	var fields = $tw.utils.extend({}, parsedFields, inheritContextFields(sourceTitle), {
 		title: title,
 		type: type,
 		"_artifact_source": sourceTitle,
@@ -285,18 +307,20 @@ function createTextArtifact(sourceTitle, artifact, text) {
 function createFileArtifact(sourceTitle, artifact, uri) {
 	if(!artifact || !artifact.suffix) return;
 	var title = sourceTitle + artifact.suffix;
-	$tw.wiki.addTiddler(new $tw.Tiddler({
+	var fields = $tw.utils.extend({}, inheritContextFields(sourceTitle), {
 		title: title,
 		text: "",
 		type: artifact.tiddlerType || "application/octet-stream",
 		_canonical_uri: uri,
 		"_artifact_source": sourceTitle,
 		"_artifact_type": artifact.type || "derived"
-	}));
+	});
+	$tw.wiki.addTiddler(new $tw.Tiddler(fields));
 }
 
 function createMultiFileArtifacts(sourceTitle, artifact, outputs, seen) {
 	if(!artifact || !artifact.prefix) return;
+	var contextFields = inheritContextFields(sourceTitle);
 	for(var i = 0; i < outputs.length; i++) {
 		var output = outputs[i];
 		var title = sourceTitle + artifact.prefix + output.filename;
@@ -304,14 +328,15 @@ function createMultiFileArtifacts(sourceTitle, artifact, outputs, seen) {
 		// application/octet-stream. The previous default of image/png left every
 		// non-image attachment (PDF, .msg, .docx, ...) mistyped.
 		var type = artifact.tiddlerType || inferMimeFromFilename(output.filename);
-		$tw.wiki.addTiddler(new $tw.Tiddler({
+		var fields = $tw.utils.extend({}, contextFields, {
 			title: title,
 			text: "",
 			type: type,
 			_canonical_uri: output.uri,
 			"_artifact_source": sourceTitle,
 			"_artifact_type": artifact.type || "derived"
-		}));
+		});
+		$tw.wiki.addTiddler(new $tw.Tiddler(fields));
 		// Let any orchestrator (nested-trigger-startup, custom plugins) decide
 		// whether to recursively process this artifact through its own pipeline.
 		if($tw.hooks && typeof $tw.hooks.invokeHook === "function") {
