@@ -1,0 +1,8 @@
+{
+    "name": "tw-file-pipeline",
+    "private": true,
+    "description": "Tests for the rimir/file-pipeline TiddlyWiki plugin",
+    "scripts": {
+        "test": "TIDDLYWIKI_CLI_MODE=1 TIDDLYWIKI_PLUGIN_PATH=../.. npx tiddlywiki test-edition --test"
+    }
+}
