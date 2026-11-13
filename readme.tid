@@ -34,9 +34,12 @@ Configurable binary data processing pipelines for TiddlyWiki. Define multi-step 
 
 LLM steps can be configured at three levels (highest priority first):
 
-# ''Step level'' — `systemPrompt`, `provider`, `model` fields in the pipeline step JSON
-# ''Dropzone level'' — `prop-system-prompt`, `prop-provider`, `prop-model` attributes on `<$file-dropzone>`
+# ''Step level'' — `systemPrompt`, `connection`, `model` fields in the pipeline step JSON
+# ''Dropzone level'' — `prop-system-prompt`, `prop-connection`, `prop-model` attributes on `<$file-dropzone>`
 # ''Global default'' — llm-connect's provider/model/system-prompt settings
+
+
+`connection` is a connection id, connection name or provider type (named connections in llm-connect). The older `provider` / `prop-provider` fields are still supported; order: step `connection` > step `provider` > `prop-connection` > `prop-provider` > default connection.
 
 ```
 <$file-dropzone pipeline="docx-llm"

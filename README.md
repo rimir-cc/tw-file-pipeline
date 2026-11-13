@@ -72,9 +72,12 @@ Create a tiddler tagged `$:/tags/rimir/file-pipeline/pipeline` with `type: appli
 
 LLM steps can be configured at three levels (highest priority first):
 
-1. **Step level** — `systemPrompt`, `provider`, `model` fields in step JSON (supports `{{config:...}}` indirection)
-2. **Dropzone level** — `prop-system-prompt`, `prop-provider`, `prop-model` attributes on `<$file-dropzone>`
+1. **Step level** — `systemPrompt`, `connection`, `model` fields in step JSON (supports `{{config:...}}` indirection)
+2. **Dropzone level** — `prop-system-prompt`, `prop-connection`, `prop-model` attributes on `<$file-dropzone>`
 3. **Global default** — llm-connect's provider/model/system-prompt settings
+
+
+`connection` is a connection id, connection name or provider type (named connections in llm-connect). The older `provider` / `prop-provider` fields are still supported; order: step `connection` > step `provider` > `prop-connection` > `prop-provider` > default connection.
 
 ```html
 <$file-dropzone pipeline="docx-llm"

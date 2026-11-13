@@ -87,6 +87,9 @@ exports.inferMimeFromFilename = inferMimeFromFilename;
 
 // Internal helpers exposed for unit tests only.
 exports._test = {
+	pickConnectionRef: function(step, opts) {
+		return pickConnectionRef(step, opts);
+	},
 	createMultiFileArtifacts: function(sourceTitle, artifact, outputs, seen) {
 		return createMultiFileArtifacts(sourceTitle, artifact, outputs, seen);
 	}
@@ -367,7 +370,7 @@ function executeLlmStep(step, inputText, sourceTitle, filename, llmOptions, call
 
 	if(mode === "interactive") {
 		// Interactive mode — set up chat and pause pipeline
-		setupInteractiveChat(step, inputText, sourceTitle, filename);
+		setupInteractiveChat(step, inputText, sourceTitle, filename, opts);
 		if(onPause) onPause();
 		return;
 	}
@@ -384,8 +387,8 @@ function executeLlmStep(step, inputText, sourceTitle, filename, llmOptions, call
 		return;
 	}
 
-	// Priority: step field > dropzone prop-* > global default
-	var provider = resolveConfigRef(step.provider) || opts.provider;
+	// Priority: step connection > step provider > dropzone prop-connection > dropzone prop-provider > default
+	var provider = pickConnectionRef(step, opts);
 	var model = resolveConfigRef(step.model) || opts.model;
 	var systemPrompt = resolveConfigRef(step.systemPrompt) || opts.systemPrompt;
 	var config = helpers.resolveProviderConfig(provider, model, systemPrompt);
@@ -415,15 +418,31 @@ function executeLlmStep(step, inputText, sourceTitle, filename, llmOptions, call
 	});
 }
 
-function setupInteractiveChat(step, inputText, sourceTitle, filename) {
+function setupInteractiveChat(step, inputText, sourceTitle, filename, opts) {
 	var prompt = renderPromptTemplate(step.promptTemplate, {
 		text: inputText,
 		title: sourceTitle,
 		filename: filename || ""
 	});
 
-	var provider = resolveConfigRef(step.provider) || "";
-	var model = resolveConfigRef(step.model) || "";
+	var ref = pickConnectionRef(step, opts);
+	var model = resolveConfigRef(step.model) || (opts && opts.model) || "";
+	var connFields = {"llm-provider": ref};
+	try {
+		var connections = require("$:/plugins/rimir/llm-connect/connections");
+		var conn = connections.getConnection(connections.resolveConnectionId(ref));
+		if(conn) {
+			connFields = {
+				"llm-connection": conn.id,
+				"llm-connection-name": conn.name,
+				"llm-connection-type": conn.type,
+				// older llm-connect versions only understand llm-provider (= type)
+				"llm-provider": conn.type
+			};
+		}
+	} catch(e) {
+		// llm-connect without connections support: keep the plain provider string
+	}
 
 	// Create a chat tiddler with pre-loaded context
 	var chatTitle = CHAT_PREFIX + encodeURIComponent(sourceTitle);
@@ -431,17 +450,16 @@ function setupInteractiveChat(step, inputText, sourceTitle, filename) {
 		{role: "user", content: prompt}
 	];
 
-	$tw.wiki.addTiddler(new $tw.Tiddler({
+	$tw.wiki.addTiddler(new $tw.Tiddler($tw.utils.extend({
 		title: chatTitle,
 		text: "",
 		tags: "$:/tags/rimir/llm-connect/chat",
 		"llm-messages": JSON.stringify(messages),
-		"llm-provider": provider,
 		"llm-model": model,
 		"fp-source-title": sourceTitle,
 		"fp-step-id": step.id,
 		"fp-artifact": JSON.stringify(step.artifact || {})
-	}));
+	}, connFields)));
 
 	// Signal interactive mode
 	$tw.wiki.addTiddler(new $tw.Tiddler({
@@ -720,6 +738,17 @@ function setStatus(sourceTitle, text) {
 		title: STATUS_PREFIX + encodeURIComponent(sourceTitle),
 		text: text
 	}));
+}
+
+/*
+Connection reference for an LLM step (id, connection name, or provider type; "" = default).
+Order: step.connection > step.provider > opts.connection (dropzone prop-connection) >
+opts.provider (prop-provider). `provider` stays supported for older pipelines.
+*/
+function pickConnectionRef(step, opts) {
+	opts = opts || {};
+	return resolveConfigRef(step.connection) || resolveConfigRef(step.provider) ||
+		opts.connection || opts.provider || "";
 }
 
 function resolveConfigRef(value) {
