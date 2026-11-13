@@ -90,6 +90,9 @@ exports._test = {
 	pickConnectionRef: function(step, opts) {
 		return pickConnectionRef(step, opts);
 	},
+	executeLlmStep: function(step, inputText, sourceTitle, filename, llmOptions, callback, onPause) {
+		return executeLlmStep(step, inputText, sourceTitle, filename, llmOptions, callback, onPause);
+	},
 	createMultiFileArtifacts: function(sourceTitle, artifact, outputs, seen) {
 		return createMultiFileArtifacts(sourceTitle, artifact, outputs, seen);
 	}
@@ -388,11 +391,18 @@ function executeLlmStep(step, inputText, sourceTitle, filename, llmOptions, call
 	}
 
 	// Priority: step connection > step provider > dropzone prop-connection > dropzone prop-provider > default
-	var provider = pickConnectionRef(step, opts);
+	var ref = pickConnectionRef(step, opts);
 	var model = resolveConfigRef(step.model) || opts.model;
 	var systemPrompt = resolveConfigRef(step.systemPrompt) || opts.systemPrompt;
-	var config = helpers.resolveProviderConfig(provider, model, systemPrompt);
-	var adapter = orchestrator.getAdapter(config.provider);
+	var config, adapter;
+	try {
+		// Throws on an unknown connection or when no connection exists
+		config = helpers.resolveProviderConfig(ref, model, systemPrompt);
+		adapter = orchestrator.getAdapter(config.provider);
+	} catch(e) {
+		callback(e);
+		return;
+	}
 	var prompt = renderPromptTemplate(step.promptTemplate, {
 		text: inputText,
 		title: sourceTitle,
@@ -427,7 +437,8 @@ function setupInteractiveChat(step, inputText, sourceTitle, filename, opts) {
 
 	var ref = pickConnectionRef(step, opts);
 	var model = resolveConfigRef(step.model) || (opts && opts.model) || "";
-	var connFields = {"llm-provider": ref};
+	// Unresolved: keep the ref on the chat, so llm-connect shows a notice and falls back (type) or asks to pick
+	var connFields = ref.type ? {"llm-provider": ref.type} : (ref.connection ? {"llm-connection": ref.connection} : {});
 	try {
 		var connections = require("$:/plugins/rimir/llm-connect/connections");
 		var conn = connections.getConnection(connections.resolveConnectionId(ref));
@@ -741,14 +752,20 @@ function setStatus(sourceTitle, text) {
 }
 
 /*
-Connection reference for an LLM step (id, connection name, or provider type; "" = default).
+Connection reference for an LLM step, in llm-connect's ref form: {connection: id or name},
+{type: provider type}, or "" (default connection). A connection and a provider type stay distinct,
+so a connection merely named like a type never captures `provider`.
 Order: step.connection > step.provider > opts.connection (dropzone prop-connection) >
 opts.provider (prop-provider). `provider` stays supported for older pipelines.
 */
 function pickConnectionRef(step, opts) {
 	opts = opts || {};
-	return resolveConfigRef(step.connection) || resolveConfigRef(step.provider) ||
-		opts.connection || opts.provider || "";
+	var connection = resolveConfigRef(step.connection), provider = resolveConfigRef(step.provider);
+	if(connection) return {connection: connection};
+	if(provider) return {type: provider};
+	if(opts.connection) return {connection: opts.connection};
+	if(opts.provider) return {type: opts.provider};
+	return "";
 }
 
 function resolveConfigRef(value) {

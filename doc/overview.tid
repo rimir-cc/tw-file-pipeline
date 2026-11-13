@@ -69,10 +69,10 @@ LLM settings are resolved in this order (highest priority first):
 
 # ''Step level'' — `systemPrompt`, `connection`, `model` fields in the pipeline step JSON (supports `{{config:...}}` indirection)
 # ''Dropzone level'' — `prop-system-prompt`, `prop-connection`, `prop-model` attributes on `<$file-dropzone>`
-# ''Global default'' — llm-connect's provider/model/system-prompt settings
+# ''Global default'' — llm-connect's default connection (and its model) and system prompt
 
 
-`connection` is a connection id, connection name or provider type (named connections in llm-connect). The older `provider` / `prop-provider` fields are still supported; order: step `connection` > step `provider` > `prop-connection` > `prop-provider` > default connection.
+`connection` / `prop-connection` is a connection id or name (named connections in llm-connect). The older `provider` / `prop-provider` fields are still supported and take a provider type: the default connection if it has that type, else the first of that type by name (a connection merely named like a type is never picked). Order: step `connection` > step `provider` > `prop-connection` > `prop-provider` > default connection. An unknown connection, or no connection at all, fails the step with a readable error instead of leaving the file on "LLM processing".
 
 This allows a single pipeline definition to be reused across different dropzones with different LLM configurations.
 

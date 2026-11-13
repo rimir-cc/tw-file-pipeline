@@ -25,7 +25,7 @@ Configurable binary data processing pipelines for TiddlyWiki. Define multi-step 
 
 - **runner** plugin — provides `runner-actions.json` command execution
 - **file-upload** plugin — provides URI resolution and artifact cascade
-- **llm-connect** plugin — required only for LLM pipeline steps (optional)
+- **llm-connect** plugin 0.1.57+ — required only for LLM pipeline steps (optional)
 
 External tools (as needed by your pipelines):
 - `magick` — ImageMagick for thumbnails
@@ -74,10 +74,10 @@ LLM steps can be configured at three levels (highest priority first):
 
 1. **Step level** — `systemPrompt`, `connection`, `model` fields in step JSON (supports `{{config:...}}` indirection)
 2. **Dropzone level** — `prop-system-prompt`, `prop-connection`, `prop-model` attributes on `<$file-dropzone>`
-3. **Global default** — llm-connect's provider/model/system-prompt settings
+3. **Global default** — llm-connect's default connection (and its model) and system prompt
 
 
-`connection` is a connection id, connection name or provider type (named connections in llm-connect). The older `provider` / `prop-provider` fields are still supported; order: step `connection` > step `provider` > `prop-connection` > `prop-provider` > default connection.
+`connection` / `prop-connection` is a connection id or name (named connections in llm-connect). The older `provider` / `prop-provider` fields are still supported and take a provider type: the default connection if it has that type, else the first of that type by name (a connection merely named like a type is never picked). Order: step `connection` > step `provider` > `prop-connection` > `prop-provider` > default connection. An unknown connection, or no connection at all, fails the step with a readable error instead of leaving the file on "LLM processing".
 
 ```html
 <$file-dropzone pipeline="docx-llm"
